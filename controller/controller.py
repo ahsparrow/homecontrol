@@ -8,7 +8,7 @@ import gevent
 from .suntime import Sun
 
 LAT = 51.0
-LON = 1.6
+LON = -1.6
 
 class Timer:
     def __init__(self, delta):
