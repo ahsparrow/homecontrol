@@ -89,5 +89,8 @@ class Controller:
         data = json.dumps(value).encode('utf-8')
         req = urllib.request.Request(url=url, data=data, method='PUT',
                 headers={'Content-Type': "application/json"})
-        with urllib.request.urlopen(req) as f:
-            pass
+
+        try:
+            urllib.request.urlopen(req)
+        except urllib.error.URLError:
+            print("Error openning " + url)
