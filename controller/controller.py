@@ -10,36 +10,36 @@ from .suntime import Sun
 LAT = 51.0
 LON = -1.6
 
-SWITCH_ON = 1
-SWITCH_OFF = -1
+SWITCH_OFF = 0
+SWITCH_ON = 255
 
 class Timer:
-    def __init__(self, delta):
-        self.delta = delta
+    def __init__(self, setting):
+        self.setting = setting
 
 class SunTimer(Timer):
     # offset is datetime.timedelta object
-    def __init__(self, offset, delta):
-        super().__init__(delta)
+    def __init__(self, setting, sun, offset):
+        super().__init__(setting)
+        self.sun = sun
         self.offset = offset
-        self.sun = Sun(LAT, LON)
+
+    def __le__(self, secs):
+        dt = datetime.utcfromtimestamp(secs) - timedelta(seconds=self.offset)
+        return self.suntime() <= dt.time()
 
 class SunriseTimer(SunTimer):
-    def __le__(self, secs):
-        sunrise = self.sun.get_sunrise_time()
-        dt = datetime.utcfromtimestamp(secs) - timedelta(seconds=self.offset)
-        return sunrise.time() <= dt.time()
+    def suntime(self):
+        return self.sun.get_sunrise_time().time()
 
 class SunsetTimer(SunTimer):
-    def __le__(self, secs):
-        sunset = self.sun.get_sunset_time()
-        dt = datetime.utcfromtimestamp(secs) - timedelta(seconds=self.offset)
-        return sunset.time() <= dt.time()
+    def suntime(self):
+        return self.sun.get_sunset_time().time()
 
 class DailyTimer(Timer):
     # localtime is naive datetime.time object
-    def __init__(self, localtime, delta):
-        super().__init__(delta)
+    def __init__(self, setting, localtime):
+        super().__init__(setting)
         self.localtime = localtime
 
     def __le__(self, secs):
@@ -47,33 +47,46 @@ class DailyTimer(Timer):
         return self.localtime <= dt.time()
 
 class Controller:
-    def __init__(self, switches, resolution=60):
-        self.switches = {s[0]: {'mode': 'manual', 'timers': {}, 'value': s[1]} for s in switches}
+    def __init__(self, resolution=60):
         self.resolution = resolution
+
+        self.switches = {}
+        self.sun = Sun(LAT, LON)
 
         self.secs = int(time.time())
         self.timer_id = 0
+
+    def load(self, settings):
+        for name, switch in settings.items():
+            self.switches[name] = {
+                    'timers': [self.timer_factory(t) for t in switch['timers']],
+                    'mode': switch['mode']}
+
+    def timer_factory(self, tim):
+        if tim['type'] == 'daily':
+            localtime = datetime.strptime(tim['time'], "%H:%M:%S").time()
+            timer = DailyTimer(tim['setting'], localtime)
+
+        elif tim['type'] == 'sunrise':
+            timer = SunriseTimer(tim['setting'], self.sun, tim['offset'])
+
+        elif tim['type'] == 'sunset':
+            timer = SunsetTimer(tim['setting'], self.sun, tim['offset'])
+
+        return timer
 
     def set_switch(self, switch, mode):
         self.switches[switch]['mode'] = mode
         if mode == 'manual':
             return
         elif mode == 'on':
-            val = self.switches[switch]['value']
+            val = 'on'
         elif mode == 'auto':
-            val = self._get_auto_value(switch, self.secs)
+            val = self._get_auto_setting(switch, self.secs)
         else:
-            val = 0
+            val = 'off'
 
         self._set_switch(switch, val)
-
-    def add_timer(self, timer, switch):
-        self.timer_id += 1
-        self.switches[switch]['timers'][self.timer_id] = timer
-        return self.timer_id
-
-    def remove_timer(self, timer_id):
-        pass
 
     def start(self):
         self.secs = int(time.time()) + 1
@@ -92,27 +105,27 @@ class Controller:
             if switch['mode'] == 'manual':
                 continue
             elif switch['mode'] == 'on':
-                value = switch['value']
+                setting = 'on'
             elif switch['mode'] == 'off':
-                value = 0
+                setting = 'off'
             else:
-                value = self._get_auto_value(s, secs)
+                setting = self._get_auto_setting(s, secs)
 
-            self._set_switch(s, value)
+            self._set_switch(s, setting)
 
-    def _get_auto_value(self, switch, secs):
+    def _get_auto_setting(self, switch, secs):
         acc = 0
-        for t in self.switches[switch]['timers'].values():
+        for t in self.switches[switch]['timers']:
             if t <= secs:
-                acc += t.delta
+                acc += 1 if t.setting == 'on' else -1
 
-        val =  self.switches[switch]['value'] if acc > 0 else 0
+        val =  'on' if acc > 0 else 'off'
         return val
 
-    def _set_switch(self, switch, value):
-        print(datetime.now(), switch, value)
+    def _set_switch(self, switch, setting):
+        print(datetime.now(), switch, setting)
         url = "http://homeweb:5000/api/switch/%s" % switch
-        data = json.dumps(value).encode('utf-8')
+        data = json.dumps(SWITCH_ON if setting == 'on' else SWITCH_OFF).encode('utf-8')
         req = urllib.request.Request(url=url, data=data, method='PUT',
                 headers={'Content-Type': "application/json"})
 

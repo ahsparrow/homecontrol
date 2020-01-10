@@ -2,17 +2,16 @@ from gevent import monkey; monkey.patch_all()
 import gevent
 
 import datetime
+import yaml
 
-from controller.controller import Controller, DailyTimer, SunsetTimer
+from controller.controller import Controller, DailyTimer, SunsetTimer, SunriseTimer
 
-c = Controller([('socket1', 255), ('outside_light', 255)], resolution=300)
+c = Controller(resolution=10)
 
-tim1 = SunsetTimer(-1800, 1)
-c.add_timer(tim1, "outside_light")
+with open('config.yaml') as f:
+    config = yaml.safe_load(f)
 
-tim2 = DailyTimer(datetime.time(21, 45, 0), -1)
-c.add_timer(tim2, "outside_light")
+c.load(config)
 
 g = gevent.spawn(Controller.start, c)
-
 gevent.joinall([g])
