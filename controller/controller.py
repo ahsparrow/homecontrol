@@ -32,9 +32,15 @@ class SunriseTimer(SunTimer):
     def suntime(self):
         return self.sun.get_sunrise_time().time()
 
+    def asdict(self):
+        return {'type': "sunrise", 'setting': self.setting, 'offset': self.offset}
+
 class SunsetTimer(SunTimer):
     def suntime(self):
         return self.sun.get_sunset_time().time()
+
+    def asdict(self):
+        return {'type': "sunset", 'setting': self.setting, 'offset': self.offset}
 
 class DailyTimer(Timer):
     # localtime is naive datetime.time object
@@ -45,6 +51,11 @@ class DailyTimer(Timer):
     def __le__(self, secs):
         dt = datetime.fromtimestamp(secs)
         return self.localtime <= dt.time()
+
+    def asdict(self):
+        return {'type': "daily",
+                'setting': self.setting,
+                'time': self.localtime.strftime("%H:%M:%S")}
 
 class Controller:
     def __init__(self, resolution=60):
@@ -61,6 +72,14 @@ class Controller:
             self.switches[name] = {
                     'timers': [self.timer_factory(t) for t in switch['timers']],
                     'mode': switch['mode']}
+
+    def dump(self):
+        result = {}
+        for name, switch in self.switches.items():
+            result[name] = {'mode': switch['mode'],
+                            'timers': [t.asdict() for t in switch['timers']]}
+
+        return result
 
     def timer_factory(self, tim):
         if tim['type'] == 'daily':
