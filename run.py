@@ -4,7 +4,7 @@ import gevent
 import datetime
 import yaml
 
-from controller.controller import Controller, DailyTimer, SunsetTimer, SunriseTimer
+from controller.controller import Controller
 
 c = Controller(resolution=10)
 

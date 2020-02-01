@@ -65,7 +65,6 @@ class Controller:
         self.sun = Sun(LAT, LON)
 
         self.secs = int(time.time())
-        self.timer_id = 0
 
     def load(self, settings):
         for name, switch in settings.items():
