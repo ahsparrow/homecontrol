@@ -1,0 +1,12 @@
+[Unit]
+Description="Homecontrol app"
+After=network.target
+
+[Service]
+User=ahs
+RuntimeDir=homecontrol
+WorkingDirectory=/home/ahs/src/homecontrol
+ExecStart=/home/ahs/.virtualenvs/homecontrol/venv/bin/python run.py
+
+[Install]
+WantedBy=multi-user.target
