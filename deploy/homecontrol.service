@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 User=ahs
-RuntimeDir=homecontrol
+RuntimeDirectory=homecontrol
 WorkingDirectory=/home/ahs/src/homecontrol
 ExecStart=/home/ahs/.virtualenvs/homecontrol/venv/bin/python run.py
 
