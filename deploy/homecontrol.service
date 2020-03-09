@@ -6,7 +6,7 @@ After=network.target
 User=ahs
 RuntimeDirectory=homecontrol
 WorkingDirectory=/home/ahs/src/homecontrol
-ExecStart=/home/ahs/.virtualenvs/homecontrol/venv/bin/python run.py
+ExecStart=/home/ahs/.virtualenvs/homecontrol/bin/python run.py
 
 [Install]
 WantedBy=multi-user.target
