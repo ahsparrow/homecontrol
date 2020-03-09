@@ -1,0 +1,40 @@
+outside_light:
+  mode: auto
+  timers:
+    - "on":
+        type: daily
+        time: "06:55:00"
+
+      "off":
+        type: sunrise
+        offset: -900
+
+    - "on":
+        type: sunset
+        offset: -1800
+
+      "off":
+        type: daily
+        time: "21:50:00"
+
+socket1:
+  mode: auto
+  timers:
+    - "on":
+        type: daily
+        time: "13:28:30"
+
+      "off":
+        type: daily
+        time: "13:28:50"
+
+overstair_light:
+  mode: manual
+  timers:
+    - "on":
+        type: daily
+        time: "15:00:00"
+
+      "off":
+        type: daily
+        time: "15:10:00"
