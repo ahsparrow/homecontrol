@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import time
 import urllib.request
@@ -13,53 +13,71 @@ LON = -1.6
 SWITCH_OFF = 0
 SWITCH_ON = 255
 
+def time_delta(on, off):
+    return ((off.hour * 3600 + off.minute * 60 + off.second) -
+            (on.hour * 3600 + on.minute * 60 + on.second))
+
 class SunEvent:
     # offset is datetime.timedelta object
     def __init__(self, sun, offset):
         self.sun = sun
         self.offset = offset
 
-    def __gt__(self, secs):
-        dt = datetime.utcfromtimestamp(secs) - timedelta(seconds=self.offset)
-        return self.suntime() > dt.time()
+    def time(self):
+        dt = self.suntime()
+        dt.replace(tzinfo=timezone.utc)
+        ts = dt.timestamp()
+
+        return datetime.fromtimestamp(ts + self.offset).time()
 
 class SunriseEvent(SunEvent):
     def suntime(self):
-        return self.sun.get_sunrise_time().time()
+        return self.sun.get_sunrise_time()
 
     def asdict(self):
-        return {'type': "sunrise", 'offset': self.offset}
+        return {'type': "sunrise",
+                'offset': self.offset}
 
 class SunsetEvent(SunEvent):
     def suntime(self):
-        return self.sun.get_sunset_time().time()
+        return self.sun.get_sunset_time()
 
     def asdict(self):
-        return {'type': "sunset", 'offset': self.offset}
+        return {'type': "sunset",
+                'offset': self.offset}
 
 class DailyEvent:
     # localtime is naive datetime.time object
     def __init__(self, localtime):
         self.localtime = localtime
 
-    def __gt__(self, secs):
-        dt = datetime.fromtimestamp(secs)
-        return self.localtime > dt.time()
+    def time(self):
+        return self.localtime
 
     def asdict(self):
         return {'type': "daily",
                 'time': self.localtime.strftime("%H:%M:%S")}
 
 class Timer:
-    def __init__(self, on_event, off_event):
+    def __init__(self, on_event, off_event, minimum=None):
         self.on_event = on_event
         self.off_event = off_event
+        self.minimum = minimum
 
-    def is_on(self, secs):
-        return (not (self.on_event > secs)) and (self.off_event > secs)
+    def is_on(self, dt):
+        tim = dt.time()
+
+        if self.minimum is not None:
+            t = time_delta(self.on_event.time(), self.off_event.time())
+            if t < self.minimum:
+                return False
+
+        return self.on_event.time() <= tim and self.off_event.time() > tim
 
     def asdict(self):
-        return {'on': self.on_event.asdict(), 'off': self.off_event.asdict()}
+        val = {'on': self.on_event.asdict(), 'off': self.off_event.asdict()}
+        if self.minimum is not None:
+            val['minimum'] = self.minimum
 
 class Controller:
     def __init__(self, resolution=60):
@@ -81,14 +99,14 @@ class Controller:
         for name, switch in self.switches.items():
             result[name] = {'mode': switch['mode'],
                             'timers': [t.asdict() for t in switch['timers']]}
-
         return result
 
     def timer_factory(self, tim):
         on_event = self.event_factory(tim['on'])
         off_event = self.event_factory(tim['off'])
+        minimum = tim.get('minimum')
 
-        return Timer(on_event, off_event)
+        return Timer(on_event, off_event, minimum)
 
     def event_factory(self, evt):
         if evt['type'] == 'daily':
@@ -124,11 +142,11 @@ class Controller:
                 gevent.sleep(delta)
 
             if (self.secs % self.resolution) == 0:
-                self._update(self.secs)
+                self._update(datetime.fromtimestamp(self.secs))
             self.secs += 1
 
     # _update is called every self.resolution seconds
-    def _update(self, secs):
+    def _update(self, dt):
         for s, switch in self.switches.items():
             if switch['mode'] == 'manual':
                 continue
@@ -137,14 +155,14 @@ class Controller:
             elif switch['mode'] == 'off':
                 setting = 'off'
             else:
-                setting = self._get_auto_setting(switch['timers'], secs)
+                setting = self._get_auto_setting(switch['timers'], dt)
 
             self._set_switch(s, setting)
 
-    def _get_auto_setting(self, timers, secs):
+    def _get_auto_setting(self, timers, dt):
         on = False
         for t in timers:
-            on = on or t.is_on(secs)
+            on = on or t.is_on(dt)
 
         val = 'on' if on else 'off'
         return val

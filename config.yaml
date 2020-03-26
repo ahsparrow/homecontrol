@@ -9,6 +9,8 @@ outside_light:
         type: sunrise
         offset: -900
 
+      minimum: 1800
+
     - "on":
         type: sunset
         offset: -1800
@@ -17,16 +19,18 @@ outside_light:
         type: daily
         time: "21:50:00"
 
+      minimum: 1800
+
 socket1:
   mode: auto
   timers:
     - "on":
         type: daily
-        time: "13:28:30"
+        time: "20:43:10"
 
       "off":
         type: daily
-        time: "13:28:50"
+        time: "20:43:20"
 
 overstair_light:
   mode: manual
