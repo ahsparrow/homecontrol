@@ -136,6 +136,8 @@ class Controller:
 
     def start(self):
         self.secs = int(time.time()) + 1
+        self._update(datetime.fromtimestamp(self.secs))
+
         while 1:
             delta = self.secs - time.time()
             if delta > 0:
