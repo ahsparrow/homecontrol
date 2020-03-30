@@ -6,7 +6,7 @@ import yaml
 
 from controller.controller import Controller
 
-c = Controller(resolution=10)
+c = Controller(resolution=600)
 
 with open('config.yaml') as f:
     config = yaml.safe_load(f)
