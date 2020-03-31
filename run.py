@@ -11,9 +11,10 @@ if __name__ == "__main__":
                         type=argparse.FileType("r"))
     parser.add_argument("-r", "--resolution", default=600, type=int,
                         help="Event resolution (secs)")
-    parser.add_argument("-z", "--zhost", help="Z-Wave host")
-    parser.add_argument("-p", "--zport", help="Z-Wave port", type=int,
-                        default=5000)
+    parser.add_argument("-z", "--zhost", default="localhost",
+                        help="Z-Wave host")
+    parser.add_argument("-p", "--zport", type=int, default=5000,
+                        help="Z-Wave port")
     args = parser.parse_args()
 
     from controller.controller import Controller
