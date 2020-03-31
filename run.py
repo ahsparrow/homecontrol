@@ -1,17 +1,27 @@
 from gevent import monkey; monkey.patch_all()
 import gevent
 
-import datetime
-import yaml
+if __name__ == "__main__":
+    import argparse
+    import datetime
+    import yaml
 
-from controller.controller import Controller
+    parser = argparse.ArgumentParser()
+    parser.add_argument("config_file", help="Configuration file",
+                        type=argparse.FileType("r"))
+    parser.add_argument("-r", "--resolution", default=600, type=int,
+                        help="Event resolution (secs)")
+    parser.add_argument("-z", "--zhost", help="Z-Wave host")
+    parser.add_argument("-p", "--zport", help="Z-Wave port", type=int,
+                        default=5000)
+    args = parser.parse_args()
 
-c = Controller(resolution=600)
+    from controller.controller import Controller
 
-with open('config.yaml') as f:
-    config = yaml.safe_load(f)
+    config = yaml.safe_load(args.config_file)
+    c = Controller(resolution=args.resolution,
+                   zhost=args.zhost, zport=args.zport)
+    c.load(config)
 
-c.load(config)
-
-g = gevent.spawn(Controller.start, c)
-gevent.joinall([g])
+    g = gevent.spawn(Controller.start, c)
+    gevent.joinall([g])

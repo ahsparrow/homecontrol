@@ -80,8 +80,10 @@ class Timer:
             val['minimum'] = self.minimum
 
 class Controller:
-    def __init__(self, resolution=60):
+    def __init__(self, resolution=60, zhost="localhost", zport=5000):
         self.resolution = resolution
+        self.zhost = zhost
+        self.zport = zport
 
         self.switches = {}
         self.sun = Sun(LAT, LON)
@@ -171,7 +173,7 @@ class Controller:
 
     def _set_switch(self, switch, setting):
         print(datetime.now(), switch, setting)
-        url = "http://homeweb:5000/api/switch/%s" % switch
+        url = "http://%s:%d/api/switch/%s" % (self.zhost, self.zport, switch)
         data = json.dumps(SWITCH_ON if setting == 'on' else SWITCH_OFF).encode('utf-8')
         req = urllib.request.Request(url=url, data=data, method='PUT',
                 headers={'Content-Type': "application/json"})
