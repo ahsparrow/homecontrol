@@ -25,7 +25,7 @@ class SunEvent:
 
     def time(self):
         dt = self.suntime()
-        dt.replace(tzinfo=timezone.utc)
+        dt = dt.replace(tzinfo=timezone.utc)
         ts = dt.timestamp()
 
         return datetime.fromtimestamp(ts + self.offset).time()
