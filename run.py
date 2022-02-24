@@ -9,7 +9,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("config_file", help="Configuration file",
                         type=argparse.FileType("r"))
-    parser.add_argument("-r", "--resolution", default=600, type=int,
+    parser.add_argument("-r", "--resolution", default=300, type=int,
                         help="Event resolution (secs)")
     parser.add_argument("-z", "--zhost", default="localhost",
                         help="Z-Wave host")
